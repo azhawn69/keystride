@@ -3,6 +3,7 @@ import { Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LESSONS, passThreshold } from "@/lib/lessons";
 import { loadLessonProgress, recordLessonResult, type LessonProgress } from "@/lib/lessonProgress";
+import { pushLessonProgress } from "@/lib/cloudSync";
 import { useLessonEngine } from "@/hooks/useLessonEngine";
 import { FingerGuideKeyboard } from "./FingerGuideKeyboard";
 
@@ -37,7 +38,9 @@ export function LessonsView() {
     if (engine.status === "done" && !recordedRef.current) {
       recordedRef.current = true;
       const passed = engine.accuracy >= passThreshold();
-      setProgress(recordLessonResult(selectedIndex, lesson.id, engine.accuracy, passed));
+      const updated = recordLessonResult(selectedIndex, lesson.id, engine.accuracy, passed);
+      setProgress(updated);
+      pushLessonProgress(updated);
     }
   }, [engine.status, engine.accuracy, selectedIndex, lesson.id]);
 

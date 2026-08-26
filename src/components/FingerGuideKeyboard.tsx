@@ -18,6 +18,8 @@ const KEY_SIZE = "h-5 w-5 text-[10px] sm:h-7 sm:w-7 sm:text-xs";
 export function FingerGuideKeyboard({ nextChar, className }: FingerGuideKeyboardProps) {
   const activeKey = nextChar ? nextChar.toLowerCase() : null;
   const activeFinger = nextChar ? fingerForChar(nextChar) : null;
+  const needsShift = nextChar !== null && /[A-Z]/.test(nextChar);
+  const shiftHand = activeFinger?.startsWith("left") ? "right pinky" : "left pinky";
 
   return (
     <div className={cn("select-none rounded-md border border-border bg-card/40 p-2.5 sm:p-4", className)}>
@@ -65,9 +67,9 @@ export function FingerGuideKeyboard({ nextChar, className }: FingerGuideKeyboard
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
+      <div className="mt-3 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
         {activeFinger ? (
-          <>
+          <div className="flex items-center gap-2">
             <span
               className={cn(
                 "inline-block h-2.5 w-2.5 shrink-0 rounded-full",
@@ -75,9 +77,14 @@ export function FingerGuideKeyboard({ nextChar, className }: FingerGuideKeyboard
               )}
             />
             use your <span className="text-foreground">{activeFinger.replace("-", " ")}</span> finger
-          </>
+          </div>
         ) : (
           <span>rest your fingers on the home row — left on ASDF, right on JKL;</span>
+        )}
+        {needsShift && (
+          <div className="text-amber-400">
+            + hold shift with your <span className="font-medium">{shiftHand}</span>
+          </div>
         )}
       </div>
     </div>

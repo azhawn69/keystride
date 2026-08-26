@@ -1,4 +1,4 @@
-import { generateWords } from "./words";
+import { COMMON_WORDS, generateWords } from "./words";
 
 export interface Lesson {
   id: string;
@@ -6,6 +6,7 @@ export interface Lesson {
   newKeys: string[];
   reviewKeys: string[]; // filled in automatically below — everything learned in prior lessons
   useRealWords?: boolean;
+  mixedCase?: boolean; // drills random capitalization of already-learned letters
 }
 
 interface LessonSeed {
@@ -13,6 +14,7 @@ interface LessonSeed {
   title: string;
   newKeys: string[];
   useRealWords?: boolean;
+  mixedCase?: boolean;
 }
 
 const SEEDS: LessonSeed[] = [
@@ -28,6 +30,9 @@ const SEEDS: LessonSeed[] = [
   { id: "bottom-index", title: "bottom row: index fingers", newKeys: ["v", "m", "b", "n"] },
   { id: "bottom-rest", title: "bottom row: middle, ring & pinky", newKeys: ["c", ",", "x", ".", "z", "/"] },
   { id: "bottom-review", title: "bottom row review", newKeys: [] },
+  { id: "numbers", title: "number row", newKeys: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] },
+  { id: "symbols", title: "symbols & punctuation", newKeys: ["-", "=", "[", "]", "'"] },
+  { id: "capitals", title: "capitals & shift", newKeys: [], mixedCase: true },
   { id: "full-review", title: "full keyboard review", newKeys: [], useRealWords: true },
 ];
 
@@ -51,6 +56,17 @@ function pickWeighted(newKeys: string[], reviewKeys: string[]): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+const isLetter = (ch: string) => /^[a-z]$/.test(ch);
+
+// Once enough letters are unlocked that real short words become typeable,
+// blend those in alongside the pseudo-random drills — less jibberish, more
+// like actual typing, without changing anything for early letter-only lessons.
+function realWordCandidates(allowedKeys: string[]): string[] {
+  const allowed = new Set(allowedKeys.filter(isLetter));
+  if (allowed.size === 0) return [];
+  return COMMON_WORDS.filter((w) => [...w.toLowerCase()].every((ch) => allowed.has(ch)));
+}
+
 export function generateDrillText(lesson: Lesson, wordCount = 24): string {
   if (lesson.useRealWords) {
     return generateWords(wordCount, { punctuation: false, numbers: false })
@@ -58,8 +74,31 @@ export function generateDrillText(lesson: Lesson, wordCount = 24): string {
       .join(" ");
   }
 
+  if (lesson.mixedCase) {
+    const letterPool = lesson.reviewKeys.filter(isLetter);
+    const words: string[] = [];
+    for (let i = 0; i < wordCount; i++) {
+      const len = 2 + Math.floor(Math.random() * 3);
+      let word = "";
+      for (let j = 0; j < len; j++) {
+        const ch = letterPool[Math.floor(Math.random() * letterPool.length)];
+        word += Math.random() < 0.35 ? ch.toUpperCase() : ch;
+      }
+      words.push(word);
+    }
+    return words.join(" ");
+  }
+
+  const allLearned = [...lesson.newKeys, ...lesson.reviewKeys];
+  const realWords = realWordCandidates(allLearned);
+  const useRealWordChance = realWords.length >= 8 ? 0.5 : 0;
+
   const words: string[] = [];
   for (let i = 0; i < wordCount; i++) {
+    if (Math.random() < useRealWordChance) {
+      words.push(realWords[Math.floor(Math.random() * realWords.length)]);
+      continue;
+    }
     const len = 2 + Math.floor(Math.random() * 3);
     let word = "";
     for (let j = 0; j < len; j++) {

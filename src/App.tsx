@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { useTypingEngine, type EngineSettings } from "@/hooks/useTypingEngine";
 import { loadHistory, personalBest, saveResult, type TestResult } from "@/lib/history";
 import { loadArcadeHistory, type ArcadeResult } from "@/lib/arcadeHistory";
+import { loadLessonProgress, type LessonProgress } from "@/lib/lessonProgress";
+import { pushPracticeResult } from "@/lib/cloudSync";
 import { SettingsBar } from "@/components/SettingsBar";
 import { LiveStats } from "@/components/LiveStats";
 import { TypingArea } from "@/components/TypingArea";
@@ -12,6 +14,7 @@ import { ArcadeField } from "@/components/ArcadeField";
 import { ProfileView } from "@/components/ProfileView";
 import { FingerGuideKeyboard } from "@/components/FingerGuideKeyboard";
 import { LessonsView } from "@/components/LessonsView";
+import { AuthPanel } from "@/components/AuthPanel";
 
 const DEFAULT_SETTINGS: EngineSettings = {
   mode: "time",
@@ -28,16 +31,21 @@ function App() {
   const [settings, setSettings] = useState<EngineSettings>(DEFAULT_SETTINGS);
   const [history, setHistory] = useState<TestResult[]>(() => loadHistory());
   const [arcadeHistory, setArcadeHistory] = useState<ArcadeResult[]>([]);
+  const [lessonProgress, setLessonProgress] = useState<LessonProgress>(() => loadLessonProgress());
   const [session, setSession] = useState<{ result: TestResult; isPersonalBest: boolean } | null>(null);
 
   useEffect(() => {
-    if (view === "stats") setArcadeHistory(loadArcadeHistory());
+    if (view === "stats") {
+      setArcadeHistory(loadArcadeHistory());
+      setLessonProgress(loadLessonProgress());
+    }
   }, [view]);
 
   const handleFinish = useCallback((result: TestResult) => {
     const priorBest = personalBest(history, result.mode, result.amount);
     const updated = saveResult(result);
     setHistory(updated);
+    pushPracticeResult(result);
     setSession({ result, isPersonalBest: result.wpm >= priorBest });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [history]);
@@ -113,12 +121,13 @@ function App() {
               stats
             </button>
           </div>
+          <AuthPanel />
         </header>
 
         {view === "arcade" ? (
           <ArcadeField />
         ) : view === "stats" ? (
-          <ProfileView practiceHistory={history} arcadeHistory={arcadeHistory} />
+          <ProfileView practiceHistory={history} arcadeHistory={arcadeHistory} lessonProgress={lessonProgress} />
         ) : view === "lessons" ? (
           <LessonsView />
         ) : (

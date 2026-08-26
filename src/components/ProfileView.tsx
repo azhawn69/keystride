@@ -1,12 +1,14 @@
 import { useMemo } from "react";
-import { Gamepad2, Keyboard, Star, Trophy, Zap } from "lucide-react";
+import { GraduationCap, Gamepad2, Keyboard, Star, Trophy, Zap } from "lucide-react";
 import type { TestResult } from "@/lib/history";
 import type { ArcadeResult } from "@/lib/arcadeHistory";
-import { levelProgress, summarizeArcade, summarizePractice, totalXp } from "@/lib/profile";
+import type { LessonProgress } from "@/lib/lessonProgress";
+import { levelProgress, summarizeArcade, summarizeLessons, summarizePractice, totalXp } from "@/lib/profile";
 
 interface ProfileViewProps {
   practiceHistory: TestResult[];
   arcadeHistory: ArcadeResult[];
+  lessonProgress: LessonProgress;
 }
 
 interface Activity {
@@ -24,11 +26,15 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export function ProfileView({ practiceHistory, arcadeHistory }: ProfileViewProps) {
-  const xp = useMemo(() => totalXp(practiceHistory, arcadeHistory), [practiceHistory, arcadeHistory]);
+export function ProfileView({ practiceHistory, arcadeHistory, lessonProgress }: ProfileViewProps) {
+  const xp = useMemo(
+    () => totalXp(practiceHistory, arcadeHistory, lessonProgress),
+    [practiceHistory, arcadeHistory, lessonProgress],
+  );
   const progress = useMemo(() => levelProgress(xp), [xp]);
   const practice = useMemo(() => summarizePractice(practiceHistory), [practiceHistory]);
   const arcade = useMemo(() => summarizeArcade(arcadeHistory), [arcadeHistory]);
+  const lessons = useMemo(() => summarizeLessons(lessonProgress), [lessonProgress]);
 
   const activity: Activity[] = useMemo(() => {
     const fromPractice: Activity[] = practiceHistory.map((r) => ({
@@ -44,7 +50,7 @@ export function ProfileView({ practiceHistory, arcadeHistory }: ProfileViewProps
     return [...fromPractice, ...fromArcade].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
   }, [practiceHistory, arcadeHistory]);
 
-  const hasAnyHistory = practiceHistory.length > 0 || arcadeHistory.length > 0;
+  const hasAnyHistory = practiceHistory.length > 0 || arcadeHistory.length > 0 || lessons.completed > 0;
 
   return (
     <div className="space-y-6">
@@ -76,7 +82,22 @@ export function ProfileView({ practiceHistory, arcadeHistory }: ProfileViewProps
           No sessions yet — play a practice test or a round of arcade and your stats will show up here.
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-3 rounded-md border border-amber-400/30 bg-card/40 p-5">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <GraduationCap className="h-4 w-4 text-amber-400" />
+              lessons
+            </div>
+            <StatRow label="completed" value={`${lessons.completed} / ${lessons.total}`} />
+            <StatRow label="avg accuracy" value={lessons.avgAccuracy > 0 ? `${lessons.avgAccuracy}%` : "—"} />
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div
+                className="h-full rounded-full bg-amber-400"
+                style={{ width: `${(lessons.completed / lessons.total) * 100}%` }}
+              />
+            </div>
+          </div>
+
           <div className="space-y-3 rounded-md border border-border bg-card/40 p-5">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Keyboard className="h-4 w-4 text-amber-400" />
@@ -127,7 +148,7 @@ export function ProfileView({ practiceHistory, arcadeHistory }: ProfileViewProps
         <Trophy className="h-3.5 w-3.5" />
         every session is saved automatically in this browser
         <Zap className="ml-2 h-3.5 w-3.5" />
-        xp comes from both practice and arcade play
+        xp comes from lessons, practice, and arcade play
       </p>
     </div>
   );

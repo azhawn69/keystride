@@ -1,5 +1,7 @@
 import type { TestResult } from "./history";
 import type { ArcadeResult } from "./arcadeHistory";
+import type { LessonProgress } from "./lessonProgress";
+import { LESSONS } from "./lessons";
 
 // XP is fully derived from history — no separate mutable counter to keep in sync.
 export function practiceXp(result: TestResult): number {
@@ -10,10 +12,21 @@ export function arcadeXp(result: ArcadeResult): number {
   return Math.round(result.score / 5);
 }
 
-export function totalXp(practiceHistory: TestResult[], arcadeHistory: ArcadeResult[]): number {
+// Every attempted lesson contributes something (partial credit below the pass
+// bar), so lessons feel worth doing even before you clear them.
+export function lessonXp(progress: LessonProgress): number {
+  return Object.values(progress.bestAccuracy).reduce((sum, acc) => sum + Math.round(acc / 2), 0);
+}
+
+export function totalXp(
+  practiceHistory: TestResult[],
+  arcadeHistory: ArcadeResult[],
+  lessonProgress?: LessonProgress,
+): number {
   const fromPractice = practiceHistory.reduce((sum, r) => sum + practiceXp(r), 0);
   const fromArcade = arcadeHistory.reduce((sum, r) => sum + arcadeXp(r), 0);
-  return fromPractice + fromArcade;
+  const fromLessons = lessonProgress ? lessonXp(lessonProgress) : 0;
+  return fromPractice + fromArcade + fromLessons;
 }
 
 const XP_PER_LEVEL_BASE = 50;
@@ -88,5 +101,20 @@ export function summarizeArcade(history: ArcadeResult[]): ArcadeSummary {
     highestWave: Math.max(...history.map((h) => h.level)),
     totalWordsDestroyed: history.reduce((sum, h) => sum + h.wordsDestroyed, 0),
     bestCombo: Math.max(...history.map((h) => h.bestCombo)),
+  };
+}
+
+export interface LessonSummary {
+  completed: number;
+  total: number;
+  avgAccuracy: number;
+}
+
+export function summarizeLessons(progress: LessonProgress): LessonSummary {
+  const accuracies = Object.values(progress.bestAccuracy);
+  return {
+    completed: progress.unlockedIndex,
+    total: LESSONS.length,
+    avgAccuracy: accuracies.length > 0 ? Math.round(accuracies.reduce((s, a) => s + a, 0) / accuracies.length) : 0,
   };
 }

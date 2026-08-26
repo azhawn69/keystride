@@ -45,8 +45,10 @@ export function useLessonEngine(lesson: Lesson) {
         setStatus("active");
       }
 
+      // Case-sensitive: the capitals lesson requires an actual shift press,
+      // not just the same letter — everything else is lowercase already.
       const expected = drillText[position];
-      if (e.key.toLowerCase() === expected) {
+      if (e.key === expected) {
         const nextPos = position + 1;
         setPosition(nextPos);
         if (nextPos >= drillText.length) {

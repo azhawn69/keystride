@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { COMMON_WORDS } from "@/lib/words";
 import { arcadeBestScore, loadArcadeHistory, saveArcadeResult, type ArcadeResult } from "@/lib/arcadeHistory";
+import { pushArcadeResult } from "@/lib/cloudSync";
 
 export type ArcadeStatus = "idle" | "playing" | "gameover";
 
@@ -111,6 +112,7 @@ export function useArcadeGame() {
     };
     setLastResult(result);
     setHistory(saveArcadeResult(result));
+    pushArcadeResult(result);
   }, []);
 
   useEffect(() => {
