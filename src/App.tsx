@@ -124,6 +124,15 @@ function App() {
           <AuthPanel />
         </header>
 
+        <nav aria-label="Explore BrianTalksAI" className="flex flex-wrap items-center gap-3 text-sm">
+          <a className="rounded-md border border-border bg-card/40 px-3 py-2 text-foreground transition-colors hover:border-amber-400 hover:text-amber-400" href="https://briantalksai.com/work/">
+            ← More work
+          </a>
+          <a className="rounded-md border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-amber-400 transition-colors hover:bg-amber-400/20" href="https://briantalksai.com/#shop">
+            Explore the shop ↗
+          </a>
+        </nav>
+
         {view === "arcade" ? (
           <ArcadeField />
         ) : view === "stats" ? (
